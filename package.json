@@ -1,0 +1,13 @@
+{
+   "name": "elite-netlog",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./src/netlogger.js",
+  "scripts": {
+    "start": "node ./src/app.js"
+  },
+  "dependencies": {
+    "chokidar": "*",
+    "fs-reverse": "*"
+  }
+}
