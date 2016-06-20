@@ -4,7 +4,7 @@ const fsreverse = require("fs-reverse");
 const EventData = require("./event_data");
 
 class Netlogger extends EventEmitter {
-    constructor(log_dir, start_from=new Date()) { //TODO: last_logged_event is undefined in readfile
+    constructor(log_dir, start_from=new Date()) {
         super();
         this.last_logged_event = start_from;
         this.current_system = "";
@@ -16,31 +16,31 @@ class Netlogger extends EventEmitter {
             awaitWriteFinish: true
         });
 
-        this.watcher.on('add', this.__read_file__);
-        this.watcher.on('change', this.__read_file__);
+        this.watcher.on('add', (filepath) => this.__read_file__(filepath));
+        this.watcher.on('change', (filepath) => this.__read_file__(filepath));
     }//constructor
 
     __read_file__ ( filepath ) {
         var file_date = Netlogger.filename_to_date(filepath);
         var file_handle = fsreverse(filepath);
-        file_handle.on('data', (line) => {
-          var parsed_line = /\{(\d{2}):(\d{2}):(\d{2})\} (System|Commander Put)\s*(.+)/.exec(line);
-          var queued_events = [];
-          if ( parsed_line ) {
-            var event_data = new EventData(...parsed_line.slice(1));
-            file_date.setUTCHours(event_data.h, event_data.m, event_data.s);
-            if ( file_date > this.last_logged_event ) {
-                queued_events.unshift(event_data);
-            }
-            else {
-                file_handle.destroy();
-                queued_events.forEach((e) =>
-                {
-                    this.last_logged_event.setUTCHours(event_data.h, event_data.m, event_data.s);
-                    this.__events__[e.operation](e.parameters);
-                });
-            }//else if last logged event occurred after next event's timestamp
-          }//if the line parses to a known event string
+        file_handle.on('data', (event_string) => {
+            var parsed_line = /\{(\d{2}):(\d{2}):(\d{2})\} (System|Commander Put)\s*(.+)/.exec(event_string);
+            var queued_events = [];
+            if ( parsed_line ) {
+                var event_data = new EventData(...parsed_line.slice(1));
+                file_date.setUTCHours(event_data.h, event_data.m, event_data.s);
+                if ( file_date > this.last_logged_event ) {
+                    queued_events.unshift(event_data);
+                }
+                else {
+                    file_handle.close();
+                    queued_events.forEach((e) =>
+                    {
+                        this.last_logged_event.setUTCHours(event_data.h, event_data.m, event_data.s);
+                        this.__events__[e.operation](e.parameters);
+                    });
+                }//else if last logged event occurred after next event's timestamp
+            }//if the line parses to a known event string
         });
     }//__read_file__
 
@@ -66,6 +66,7 @@ class Netlogger extends EventEmitter {
         ].reduce((date, next_field, i) => {
             var next_digits = Number.parseInt(filename.substr(i * 2, 2));
             next_digits = next_digits + ( 2000 * (i == 0)); //the first two digits are only the last two digits of the year
+            next_digits = next_digits + ( -1 * (i == 1)); //months in javascript are 0-indexed....
             next_field.call(date, next_digits);
             return date;
         }, new Date());
