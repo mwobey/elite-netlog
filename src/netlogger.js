@@ -10,6 +10,10 @@ class Netlogger extends EventEmitter {
         this.current_system = "";
         this.log_dir = log_dir;
 
+        this.__events__ = {};
+        this.__events__["System"] = (system_string) => this.handle_new_system(system_string);
+        this.__events__["Commander Put"] = (dock_state) => this.handle_dockstate(dock_state);
+
         this.watcher = chokidar.watch(log_dir, {
             ignored: 'debug*',
             persistent: true,
@@ -73,21 +77,21 @@ class Netlogger extends EventEmitter {
             return date;
         }, new Date());
     }//filename_to_date
-}//Netlogger
 
-
-Netlogger.prototype.__events__ = {
-    "System": (system_string) => {
+    handle_new_system (system_string) {
         //{21:03:14} System:"Meinjhalara" StarPos:(-66.375,73.688,-16.563)ly Body:23 RelPos:(-98581.6,-11.7145,14782.9)km Supercruise
+        var system_name, x, y, z;
         [, system_name, x, y, z] = /"(.+)" StarPos:\(([\d\-\.]+),([\d\-\.]+),([\d\-\.]+)\)ly/.exec(system_string);
         if (system_name != this.current_system) {
             this.current_system = system_name;
             this.emit('new-system', system_name, x, y, z)
         }
-    },
-    "Commander Put": (dock_state) => {
+    }//handle_new_system
+
+    handle_dockstate (dock_state) {
         this.emit(dock_state.toLowerCase()); //"docked" or "undocked"
     }
-};
+}//Netlogger
+
 
 module.exports = Netlogger;
