@@ -31,20 +31,20 @@ class Netlogger extends EventEmitter {
         file_handle.on('data', (event_string) => {
             var parsed_line = /\{(\d{2}):(\d{2}):(\d{2})\} (System|Commander Put)\s*(.+)/.exec(event_string);
             if ( parsed_line ) {
-                var event_data = new EventData(...parsed_line.slice(1));
-                file_date.setUTCHours(event_data.h, event_data.m, event_data.s);
+                file_date.setUTCHours(parsed_line[1], parsed_line[2], parsed_line[3]);
+                var event_data = new EventData(file_date, ...parsed_line.slice(4));
                 if ( file_date > this.last_logged_event ) {
                     queued_events.unshift(event_data);
                 }
                 else {
-                    file_handle.close();
+                    file_handle.destroy();
                 }//else if last logged event occurred after next event's timestamp
             }//if the line parses to a known event string
         });
         file_handle.on('close', () => {
             queued_events.forEach((e) =>
             {
-                this.last_logged_event.setUTCHours(e.h, e.m, e.s);
+                this.last_logged_event = e.date;
                 this.__events__[e.operation](e.parameters);
             });
         })

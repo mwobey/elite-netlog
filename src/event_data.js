@@ -1,9 +1,7 @@
 
 class EliteEventData {
-    constructor(h, m, s, operation, parameters) {
-        this.h = h || Number.MIN_SAFE_INTEGER;
-        this.m = m || Number.MIN_SAFE_INTEGER;
-        this.s = s || Number.MIN_SAFE_INTEGER;
+    constructor(date, operation, parameters) {
+        this.date = new Date(date.getTime());
         this.operation = operation || "";
         this.parameters = parameters || "";
 
