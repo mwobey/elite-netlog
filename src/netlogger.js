@@ -23,9 +23,9 @@ class Netlogger extends EventEmitter {
     __read_file__ ( filepath ) {
         var file_date = Netlogger.filename_to_date(filepath);
         var file_handle = fsreverse(filepath);
+        var queued_events = [];
         file_handle.on('data', (event_string) => {
             var parsed_line = /\{(\d{2}):(\d{2}):(\d{2})\} (System|Commander Put)\s*(.+)/.exec(event_string);
-            var queued_events = [];
             if ( parsed_line ) {
                 var event_data = new EventData(...parsed_line.slice(1));
                 file_date.setUTCHours(event_data.h, event_data.m, event_data.s);
@@ -34,14 +34,16 @@ class Netlogger extends EventEmitter {
                 }
                 else {
                     file_handle.close();
-                    queued_events.forEach((e) =>
-                    {
-                        this.last_logged_event.setUTCHours(event_data.h, event_data.m, event_data.s);
-                        this.__events__[e.operation](e.parameters);
-                    });
                 }//else if last logged event occurred after next event's timestamp
             }//if the line parses to a known event string
         });
+        file_handle.on('close', () => {
+            queued_events.forEach((e) =>
+            {
+                this.last_logged_event.setUTCHours(e.h, e.m, e.s);
+                this.__events__[e.operation](e.parameters);
+            });
+        })
     }//__read_file__
 
 

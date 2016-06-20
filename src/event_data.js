@@ -5,7 +5,7 @@ class EliteEventData {
         this.m = m || Number.MIN_SAFE_INTEGER;
         this.s = s || Number.MIN_SAFE_INTEGER;
         this.operation = operation || "";
-        this.parameters = arguments || "";
+        this.parameters = parameters || "";
 
     }
 }
